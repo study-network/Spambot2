@@ -8,6 +8,7 @@ import {
   SiteSettings,
   Achievement,
   AchievementMessage,
+  AdminUser,
 } from './types.ts';
 import { 
   fetchPublicWebApps, 
@@ -57,7 +58,7 @@ export default function App() {
 
   // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [currentUser, setCurrentUser] = useState<{ email: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<AdminUser | null>(getStoredUser);
 
   // Public Data
   const [publicApps, setPublicApps] = useState<PublicWebApp[]>([]);
@@ -192,10 +193,10 @@ export default function App() {
   // Initial authentication check & URL hash listener
   useEffect(() => {
     const initAuth = async () => {
-      const valid = await checkAuthMe();
-      if (valid) {
+      const user = await checkAuthMe();
+      if (user) {
         setIsAuthenticated(true);
-        setCurrentUser(getStoredUser());
+        setCurrentUser(user);
       } else {
         setIsAuthenticated(false);
         setCurrentUser(null);
@@ -207,7 +208,7 @@ export default function App() {
     // Initial authentication check & URL hash listener
     const handleHashRouting = () => {
       const hash = window.location.hash.toLowerCase();
-      if (hash === '#admin') {
+      if (hash.startsWith('#admin') || hash.startsWith('#admins')) {
         if (getAuthToken()) {
           setView('admin');
           loadAdminData();
@@ -435,7 +436,9 @@ export default function App() {
           achievementMessage={achievementMessage}
           onSaveAchievementMessage={handleSaveAchievementMessage}
           onTogglePinAchievement={handleTogglePinAchievement}
-          adminEmail={currentUser?.email}
+          adminEmail={currentUser?.username || currentUser?.email || 'admin'}
+          currentUser={currentUser}
+          onNotify={addToast}
           onOpenAdd={() => setIsAddOpen(true)}
           onOpenEdit={(app) => setEditingApp(app)}
           onOpenDelete={(app) => setDeletingApp(app)}
